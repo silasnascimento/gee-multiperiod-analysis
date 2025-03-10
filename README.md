@@ -13,22 +13,6 @@ Este projeto é um WebGIS ambiental que permite calcular e visualizar o índice 
 - Exibição de estatísticas NDVI (média, mínimo, máximo) para cada período.
 - Controle de camadas para alternar entre basemaps e camadas NDVI.
 
-## Estrutura do Projeto
-
-ndvi-multiperiod-webgis/
-├── app.py              # Backend Flask para processar NDVI com GEE
-├── frontend/           # Arquivos do frontend
-│   ├── index.html      # Página principal do WebGIS
-│   ├── script.js       # Lógica do frontend (Leaflet, requisições)
-│   └── styles.css      # Estilos CSS
-├── docs/               # Documentação adicional
-│   └── setup.md        # Guia de configuração do ambiente
-├── requirements.txt    # Dependências do backend
-├── README.md           # Documentação principal
-├── LICENSE             # Licença (MIT)
-
-
-
 ## Pré-requisitos
 - Python 3.8 ou superior
 - Conta no Google Earth Engine (GEE) com projeto configurado
