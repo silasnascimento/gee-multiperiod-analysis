@@ -1,0 +1,13 @@
+1. Autenticação no Google Earth Engine (caso ainda não esteja autenticado)
+- earthengine authenticate
+
+2. Ative o Ambiente Virtual
+Se você configurou um ambiente virtual para o projeto, ative-o:
+source venv/bin/activate
+
+3. Inicie o Servidor Flask
+Dentro do diretório onde está o arquivo app.py, execute:
+python app.py
+
+4. Abra o WebGIS no Navegador
+Se estiver usando um servidor local simples (por exemplo, Live Server no VSCode), abra o WebGIS:
