@@ -22,7 +22,7 @@ Este projeto é um WebGIS ambiental que permite calcular e visualizar o índice 
 
 Siga as instruções para instalar todos os requisitos
 
-
+## Endpoints
 - /calculate_ndvi (POST): Retorna estatísticas NDVI (média, mínimo, máximo) para cada período.
     
     - Entrada: { "roi": GeoJSON, "start_date_period_1": "YYYY-MM-DD", "end_date_period_1": "YYYY-MM-DD", ... }
