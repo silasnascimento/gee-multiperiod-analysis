@@ -18,11 +18,28 @@ Este projeto é um WebGIS ambiental que permite calcular e visualizar o índice 
 - Conta no Google Earth Engine (GEE) com projeto configurado
 - Navegador moderno para rodar o frontend (ex.: Chrome, Firefox)
 
-## Instalação
+## Utilização
 
-### 1. Clone o repositório
-```bash
-git clone https://github.com/seu-usuario/ndvi-multiperiod-webgis.git
-cd ndvi-multiperiod-webgis
-```
+Siga as instruções para instalar todos os requisitos
+
+
+- /calculate_ndvi (POST): Retorna estatísticas NDVI (média, mínimo, máximo) para cada período.
+    
+    - Entrada: { "roi": GeoJSON, "start_date_period_1": "YYYY-MM-DD", "end_date_period_1": "YYYY-MM-DD", ... }
+        
+    - Saída: { "period_1": { "ndvi_mean": 0.5, "ndvi_min": 0.2, "ndvi_max": 0.8 }, ... }
+        
+- /get_ndvi_tiles (POST): Retorna URLs de tiles NDVI para visualização.
+    
+    - Entrada: Similar ao /calculate_ndvi.
+        
+    - Saída: { "period_1": { "tile_url": "https://..." }, ... }
+        
+- /get_image_tile (POST): Retorna URLs de tiles RGB para visualização.
+    
+    - Entrada: Similar ao /calculate_ndvi.
+        
+    - Saída: { "period_1": { "tile_url": "https://..." }, ... }
+
+
 
