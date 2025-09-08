@@ -16,11 +16,12 @@ Esta aplicação Flask fornece uma API REST para análise de dados de sensoriame
 - **Análise NDVI**: Cálculo de índices de vegetação usando Sentinel-2 e Landsat 9
 - **Dados Climáticos**: Estatísticas de precipitação (CHIRPS) e temperatura (ERA5-Land)
 - **Múltiplos Projetos**: Suporte a diferentes projetos Google Earth Engine
-- **Deploy Portável**: Scripts automatizados para deploy em qualquer VPS
+- **Duas Soluções de Deploy**: Portável e Corrigida para máxima flexibilidade
 - **Containerização**: Deploy simplificado com Docker e volumes nomeados
 - **API Otimizada**: Processamento paralelo e cache inteligente
 - **Monitoramento**: Endpoint de saúde e logs detalhados
 - **Segurança**: Credenciais em volumes Docker read-only
+- **Autenticação GEE**: Verificação automática e inicialização inteligente
 
 
 
@@ -105,7 +106,9 @@ GET /health
 2. **Credenciais Google Earth Engine** configuradas
 3. **Projeto GEE** com acesso aos datasets necessários
 
-### 🎯 Deploy Portável (Recomendado)
+## 🎯 **Duas Soluções de Deploy Disponíveis**
+
+### **Solução 1: Deploy Portável** ⭐ (Recomendado para Produção)
 
 **Deploy em qualquer VPS com apenas 3 comandos:**
 
@@ -130,6 +133,28 @@ chmod +x *.sh
 **Com credenciais em local específico:**
 ```bash
 ./deploy.sh ee-meu-projeto /caminho/para/credentials
+```
+
+### **Solução 2: Deploy Corrigido** ⭐ (Recomendado para Desenvolvimento)
+
+**Deploy com container otimizado e autenticação automática:**
+
+```bash
+# 1. Clonar repositório
+git clone <seu-repositorio>
+cd ndvi-multiperiod-webgis
+
+# 2. Deploy com container corrigido
+chmod +x fix-gee-auth.sh
+./fix-gee-auth.sh
+
+# 3. Verificar status
+curl http://localhost:5000/health
+```
+
+**Ou usando Docker Compose:**
+```bash
+docker-compose -f docker-compose.fixed.yml up -d
 ```
 
 ### 📦 Opção 1: Docker Hub (Método Antigo)
@@ -178,16 +203,25 @@ export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
 
 ### 📁 Arquivos do Projeto
 
-| Arquivo | Descrição |
-|---------|-----------|
-| `app.py` | Aplicação Flask principal |
-| `deploy.sh` | **Script de deploy portável** |
-| `setup-volume.sh` | Configuração de volume Docker |
-| `docker-compose.yml` | Deploy com Docker Compose |
-| `Dockerfile` | Configuração do container |
-| `requirements.txt` | Dependências Python |
-| `DEPLOY.md` | **Guia completo de deploy** |
-| `env.example` | Exemplo de variáveis de ambiente |
+| Arquivo | Descrição | Solução |
+|---------|-----------|---------|
+| `app.py` | Aplicação Flask principal | Ambas |
+| `requirements.txt` | Dependências Python | Ambas |
+| **Solução 1 - Deploy Portável** | | |
+| `deploy.sh` | **Script de deploy portável** | 1 |
+| `setup-volume.sh` | Configuração de volume Docker | 1 |
+| `docker-compose.yml` | Deploy com Docker Compose | 1 |
+| `DEPLOY.md` | **Guia completo de deploy** | 1 |
+| `env.example` | Exemplo de variáveis de ambiente | 1 |
+| **Solução 2 - Deploy Corrigido** | | |
+| `Dockerfile.fixed` | **Dockerfile otimizado** | 2 |
+| `docker-compose.fixed.yml` | **Configuração corrigida** | 2 |
+| `entrypoint.sh` | **Script de inicialização** | 2 |
+| `fix-gee-auth.sh` | **Script de correção automática** | 2 |
+| `SOLUCAO_IMPLEMENTADA.md` | **Documentação da solução** | 2 |
+| **Arquivos Originais** | | |
+| `Dockerfile` | Dockerfile original | Original |
+| `README.md` | Documentação principal | Ambas |
 
 ### 🌐 Variáveis de Ambiente
 
@@ -294,9 +328,16 @@ curl -X POST http://localhost:5000/climate_stats \
 
 ## 🏭 Deploy em Produção
 
-### 🎯 Deploy Portável (Recomendado)
+### 🎯 **Escolha da Solução**
 
-**Para deploy em produção, use o script automatizado:**
+| Cenário | Solução Recomendada | Motivo |
+|---------|-------------------|--------|
+| **Produção Nova** | **Solução 1** (Portável) | Deploy em 3 comandos, totalmente portável |
+| **Desenvolvimento** | **Solução 2** (Corrigida) | Autenticação automática, logs detalhados |
+| **Migração** | **Solução 1** (Portável) | Migração fácil entre VPS |
+| **Testes** | **Solução 2** (Corrigida) | Setup rápido, debugging facilitado |
+
+### **Solução 1: Deploy Portável** (Produção)
 
 ```bash
 # Deploy completo com um comando
@@ -305,8 +346,6 @@ curl -X POST http://localhost:5000/climate_stats \
 # Verificar status
 curl http://localhost:5000/health
 ```
-
-### 🐳 Docker Compose
 
 **Configurar volume primeiro:**
 ```bash
@@ -317,6 +356,21 @@ curl http://localhost:5000/health
 ```bash
 # Usar o docker-compose.yml incluído
 docker-compose up -d
+```
+
+### **Solução 2: Deploy Corrigido** (Desenvolvimento)
+
+```bash
+# Deploy com container otimizado
+./fix-gee-auth.sh
+
+# Verificar status
+curl http://localhost:5000/health
+```
+
+**Deploy com Docker Compose:**
+```bash
+docker-compose -f docker-compose.fixed.yml up -d
 ```
 
 **Ou com configuração personalizada:**
@@ -406,21 +460,23 @@ sudo crontab -e
 # Adicionar: 0 12 * * * /usr/bin/certbot renew --quiet
 ```
 
-## 🎯 Vantagens do Deploy Portável
+## 🎯 **Comparação das Soluções**
 
-### ✅ **Antes vs Depois**
+### ✅ **Evolução do Projeto**
 
-| Aspecto | Método Antigo | **Deploy Portável** |
-|---------|---------------|---------------------|
-| **Portabilidade** | ❌ Dependente da VPS | ✅ **Funciona em qualquer lugar** |
-| **Segurança** | ⚠️ Caminho exposto | ✅ **Volume isolado e read-only** |
-| **Facilidade** | ❌ Comando complexo | ✅ **Um comando simples** |
-| **Backup** | ❌ Difícil | ✅ **Volume Docker portável** |
-| **Manutenção** | ❌ Manual | ✅ **Scripts automatizados** |
-| **Deploy** | ❌ 5+ comandos | ✅ **3 comandos apenas** |
+| Aspecto | Método Original | **Solução 1** (Portável) | **Solução 2** (Corrigida) |
+|---------|----------------|---------------------------|----------------------------|
+| **Portabilidade** | ❌ Dependente da VPS | ✅ **Totalmente portável** | ✅ **Portável** |
+| **Segurança** | ⚠️ Caminho exposto | ✅ **Volume read-only** | ✅ **Volume isolado** |
+| **Facilidade** | ❌ Comando complexo | ✅ **3 comandos** | ✅ **1 comando** |
+| **Autenticação** | ❌ Manual | ✅ **Automática** | ✅ **Verificação automática** |
+| **Debugging** | ❌ Limitado | ✅ **Logs básicos** | ✅ **Logs detalhados** |
+| **Deploy** | ❌ 5+ comandos | ✅ **3 comandos** | ✅ **1 comando** |
+| **Uso Recomendado** | ❌ Não recomendado | ✅ **Produção** | ✅ **Desenvolvimento** |
 
-### 🚀 **Benefícios**
+### 🚀 **Benefícios das Soluções**
 
+#### **Solução 1 - Deploy Portável**
 - **🎯 Deploy em 3 comandos**: Clone → Authenticate → Deploy
 - **🔒 Segurança**: Credenciais em volumes Docker read-only
 - **📦 Portabilidade**: Funciona em qualquer VPS com Docker
@@ -428,9 +484,41 @@ sudo crontab -e
 - **📋 Documentação**: Guia completo em `DEPLOY.md`
 - **🔄 Backup**: Volumes Docker podem ser facilmente copiados
 
+#### **Solução 2 - Deploy Corrigido**
+- **⚡ Setup rápido**: Um comando para deploy completo
+- **🔍 Debugging**: Logs detalhados e verificação automática
+- **🛡️ Autenticação**: Verificação automática de credenciais GEE
+- **🔧 Manutenção**: Scripts de correção automática
+- **📊 Monitoramento**: Health checks e logs estruturados
+- **🚀 Desenvolvimento**: Ideal para testes e desenvolvimento
+
+## 🔐 **Estado Atual das Credenciais**
+
+### **Container Ativo**
+- **Container**: `appgee-flask` (Solução 2)
+- **Volume Docker**: `earthengine_credentials`
+- **Caminho no Container**: `/root/.config/earthengine/credentials`
+- **Caminho no Host**: `/var/lib/docker/volumes/earthengine_credentials/_data/credentials`
+
+### **Arquivo Original**
+- **Caminho Original**: `/root/documents/credentials` ✅ **Preservado**
+- **Status**: Arquivo original mantido e copiado para volume Docker
+- **Integridade**: ✅ **Arquivos idênticos** (mesmo hash MD5)
+
+### **Volumes Disponíveis**
+```bash
+# Listar volumes de credenciais
+docker volume ls | grep credentials
+
+# Resultado:
+# local     earthengine_credentials      (Solução 2 - Ativo)
+# local     gee-credentials-silasnascimnto (Solução 1 - Disponível)
+```
+
 ### 📖 **Documentação Adicional**
 
-Para informações detalhadas sobre deploy, consulte:
-- **[DEPLOY.md](DEPLOY.md)** - Guia completo de deploy portável
-- **[docs/setup.md](docs/setup.md)** - Configuração manual (método antigo)
+Para informações detalhadas sobre cada solução, consulte:
+- **[DEPLOY.md](DEPLOY.md)** - Guia completo de deploy portável (Solução 1)
+- **[SOLUCAO_IMPLEMENTADA.md](SOLUCAO_IMPLEMENTADA.md)** - Documentação da solução corrigida (Solução 2)
+- **[docs/setup.md](docs/setup.md)** - Configuração manual (método original)
 

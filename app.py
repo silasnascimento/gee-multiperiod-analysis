@@ -59,7 +59,7 @@ def get_cloud_coverage_sentinel(image, roi):
         reducer=ee.Reducer.mean(),
         geometry=roi,
         scale=10,
-        maxPixels=1e6
+        maxPixels=1e9
     ).get('SCL')
     return image.set('cloud_coverage_roi', ee.Number(cloud_area).multiply(100))
 
@@ -84,7 +84,7 @@ def get_landsat_cloud_coverage(image, roi):
         reducer=ee.Reducer.mean(),
         geometry=roi,
         scale=30,
-        maxPixels=1e6
+        maxPixels=1e9
     ).get('QA_PIXEL')
     return image.set('cloud_coverage_roi', ee.Number(cloud_area).multiply(100))
 
@@ -95,7 +95,7 @@ def has_valid_pixels(image, roi, scale):
         reducer=ee.Reducer.count(),
         geometry=roi,
         scale=scale,
-        maxPixels=1e6
+        maxPixels=1e9
     ).get(image.bandNames().get(0))
     return ee.Number(pixel_count).gt(0)
 
@@ -201,7 +201,7 @@ def calculate_ndvi_logic(data):
 
             stats = ndvi.reduceRegion(
                 reducer=ee.Reducer.mean().combine(reducer2=ee.Reducer.minMax(), sharedInputs=True),
-                geometry=roi, scale=scale, maxPixels=1e6
+                geometry=roi, scale=scale, maxPixels=1e9, bestEffort=True
             ).getInfo()
 
             results[period_name] = {
@@ -278,7 +278,7 @@ def get_image_tile_logic(data):
                     results[period_name] = {'error': 'Nenhuma imagem com pixels válidos na ROI', 'satellite': 'none'}
                     continue
             best_image = best_image.clip(roi)
-            stats = best_image.select(bands).reduceRegion(reducer=ee.Reducer.percentile([15, 85]), geometry=roi, scale=scale, maxPixels=1e6).getInfo()
+            stats = best_image.select(bands).reduceRegion(reducer=ee.Reducer.percentile([15, 85]), geometry=roi, scale=scale, maxPixels=1e9, bestEffort=True).getInfo()
             vis_params = {'bands': bands, 'min': [stats.get(f'{b}_p15', 300) for b in bands], 'max': [stats.get(f'{b}_p85', 1000) for b in bands], 'gamma': 1.3}
             map_id_dict = best_image.getMapId(vis_params)
             results[period_name] = {'tile_url': map_id_dict['tile_fetcher'].url_format, 'satellite': satellite}
@@ -314,7 +314,7 @@ def calculate_chirps_logic_optimized(data, point):
                 reducer=ee.Reducer.first(), 
                 geometry=point, 
                 scale=scale,
-                maxPixels=1e6
+                maxPixels=1e9
             ).getInfo()
             
             # Verificar se os valores existem antes de acessar
@@ -357,7 +357,7 @@ def calculate_era5_temp_logic_optimized(data, point):
                 reducer=ee.Reducer.first(), 
                 geometry=point, 
                 scale=scale,
-                maxPixels=1e6
+                maxPixels=1e9
             ).getInfo()
 
             # Verificar se os valores existem antes de converter
