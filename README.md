@@ -16,9 +16,11 @@ Esta aplicação Flask fornece uma API REST para análise de dados de sensoriame
 - **Análise NDVI**: Cálculo de índices de vegetação usando Sentinel-2 e Landsat 9
 - **Dados Climáticos**: Estatísticas de precipitação (CHIRPS) e temperatura (ERA5-Land)
 - **Múltiplos Projetos**: Suporte a diferentes projetos Google Earth Engine
-- **Containerização**: Deploy simplificado com Docker
+- **Deploy Portável**: Scripts automatizados para deploy em qualquer VPS
+- **Containerização**: Deploy simplificado com Docker e volumes nomeados
 - **API Otimizada**: Processamento paralelo e cache inteligente
 - **Monitoramento**: Endpoint de saúde e logs detalhados
+- **Segurança**: Credenciais em volumes Docker read-only
 
 
 
@@ -103,10 +105,37 @@ GET /health
 2. **Credenciais Google Earth Engine** configuradas
 3. **Projeto GEE** com acesso aos datasets necessários
 
-### 📦 Opção 1: Docker Hub (Recomendado)
+### 🎯 Deploy Portável (Recomendado)
+
+**Deploy em qualquer VPS com apenas 3 comandos:**
 
 ```bash
-# Baixar e executar a imagem
+# 1. Clonar repositório
+git clone <seu-repositorio>
+cd ndvi-multiperiod-webgis
+
+# 2. Obter credenciais GEE
+earthengine authenticate
+
+# 3. Deploy automático
+chmod +x *.sh
+./deploy.sh
+```
+
+**Com projeto personalizado:**
+```bash
+./deploy.sh ee-meu-projeto
+```
+
+**Com credenciais em local específico:**
+```bash
+./deploy.sh ee-meu-projeto /caminho/para/credentials
+```
+
+### 📦 Opção 1: Docker Hub (Método Antigo)
+
+```bash
+# ⚠️ MÉTODO ANTIGO - Dependente da VPS
 docker run -d --name ndvi-flask \
   -v /caminho/para/credentials:/root/.config/earthengine/credentials \
   -p 5000:5000 \
@@ -122,14 +151,10 @@ git clone https://github.com/silasnascimento/ndvi-flask-docker.git
 cd ndvi-flask-docker
 
 # Build da imagem
-docker build -t ndvi-flask-app .
+docker build -t silasnascimento/ndvi-flask-app .
 
-# Executar container
-docker run -d --name ndvi-flask \
-  -v /caminho/para/credentials:/root/.config/earthengine/credentials \
-  -p 5000:5000 \
-  -e GEE_PROJECT=seu-projeto-gee \
-  ndvi-flask-app
+# Deploy com script automatizado
+./deploy.sh
 ```
 
 ### ⚙️ Configuração de Credenciais GEE
@@ -150,6 +175,19 @@ ls ~/.config/earthengine/
 # Configurar variável de ambiente
 export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
 ```
+
+### 📁 Arquivos do Projeto
+
+| Arquivo | Descrição |
+|---------|-----------|
+| `app.py` | Aplicação Flask principal |
+| `deploy.sh` | **Script de deploy portável** |
+| `setup-volume.sh` | Configuração de volume Docker |
+| `docker-compose.yml` | Deploy com Docker Compose |
+| `Dockerfile` | Configuração do container |
+| `requirements.txt` | Dependências Python |
+| `DEPLOY.md` | **Guia completo de deploy** |
+| `env.example` | Exemplo de variáveis de ambiente |
 
 ### 🌐 Variáveis de Ambiente
 
@@ -256,8 +294,32 @@ curl -X POST http://localhost:5000/climate_stats \
 
 ## 🏭 Deploy em Produção
 
-### 🐳 Docker Compose (Recomendado)
+### 🎯 Deploy Portável (Recomendado)
 
+**Para deploy em produção, use o script automatizado:**
+
+```bash
+# Deploy completo com um comando
+./deploy.sh ee-meu-projeto-prod
+
+# Verificar status
+curl http://localhost:5000/health
+```
+
+### 🐳 Docker Compose
+
+**Configurar volume primeiro:**
+```bash
+./setup-volume.sh ee-meu-projeto-prod
+```
+
+**Deploy com Docker Compose:**
+```bash
+# Usar o docker-compose.yml incluído
+docker-compose up -d
+```
+
+**Ou com configuração personalizada:**
 ```yaml
 # docker-compose.yml
 version: '3.8'
@@ -270,7 +332,7 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - ./credentials:/root/.config/earthengine/credentials:ro
+      - gee-credentials-meuprojeto:/root/.config/earthengine/credentials:ro
     environment:
       - GEE_PROJECT=ee-meu-projeto-prod
       - FLASK_ENV=production
@@ -281,18 +343,9 @@ services:
       retries: 3
       start_period: 40s
 
-  nginx:
-    image: nginx:alpine
-    container_name: nginx-proxy
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - ndvi-flask
+volumes:
+  gee-credentials-meuprojeto:
+    external: true
 ```
 
 ### 🌐 Configuração Nginx
@@ -352,4 +405,32 @@ sudo certbot --nginx -d seu-dominio.com
 sudo crontab -e
 # Adicionar: 0 12 * * * /usr/bin/certbot renew --quiet
 ```
+
+## 🎯 Vantagens do Deploy Portável
+
+### ✅ **Antes vs Depois**
+
+| Aspecto | Método Antigo | **Deploy Portável** |
+|---------|---------------|---------------------|
+| **Portabilidade** | ❌ Dependente da VPS | ✅ **Funciona em qualquer lugar** |
+| **Segurança** | ⚠️ Caminho exposto | ✅ **Volume isolado e read-only** |
+| **Facilidade** | ❌ Comando complexo | ✅ **Um comando simples** |
+| **Backup** | ❌ Difícil | ✅ **Volume Docker portável** |
+| **Manutenção** | ❌ Manual | ✅ **Scripts automatizados** |
+| **Deploy** | ❌ 5+ comandos | ✅ **3 comandos apenas** |
+
+### 🚀 **Benefícios**
+
+- **🎯 Deploy em 3 comandos**: Clone → Authenticate → Deploy
+- **🔒 Segurança**: Credenciais em volumes Docker read-only
+- **📦 Portabilidade**: Funciona em qualquer VPS com Docker
+- **🛠️ Manutenção**: Scripts automatizados para todas as operações
+- **📋 Documentação**: Guia completo em `DEPLOY.md`
+- **🔄 Backup**: Volumes Docker podem ser facilmente copiados
+
+### 📖 **Documentação Adicional**
+
+Para informações detalhadas sobre deploy, consulte:
+- **[DEPLOY.md](DEPLOY.md)** - Guia completo de deploy portável
+- **[docs/setup.md](docs/setup.md)** - Configuração manual (método antigo)
 
