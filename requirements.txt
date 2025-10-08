@@ -8,5 +8,5 @@ google-auth-httplib2==0.2.0
 google-cloud-core==2.4.1
 google-cloud-storage==2.19.0
 
-flasgger==0.9.7
+flasgger @ git+https://github.com/idoshr/[email protected]
 PyYAML==6.0.1
