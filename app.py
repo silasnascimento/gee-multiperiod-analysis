@@ -4,6 +4,8 @@ from flask_cors import CORS
 import ee
 import time
 import os
+from functools import wraps
+from flasgger import Swagger
 
 # Inicialização do Google Earth Engine com suporte a variável de ambiente
 def initialize_gee():
@@ -50,6 +52,27 @@ def get_project_info():
 # Configuração do Flask
 app = Flask(__name__)
 CORS(app)
+
+# Configuração do Swagger (Flasgger)
+swagger_template = {
+    'swagger': '2.0',
+    'info': {
+        'title': 'GEE NDVI & Climate API',
+        'description': 'API para cálculo de NDVI e estatísticas climáticas utilizando Google Earth Engine. Autenticação via API Key pelo cabeçalho X-API-Key.',
+        'version': '1.0.0'
+    },
+    'basePath': '/',
+    'schemes': ['http'],
+    'securityDefinitions': {
+        'ApiKeyAuth': {
+            'type': 'apiKey',
+            'name': 'X-API-Key',
+            'in': 'header'
+        }
+    }
+}
+
+swagger = Swagger(app, template=swagger_template)
 
 # Funções de mascaramento e cobertura de nuvens para Sentinel-2
 def get_cloud_coverage_sentinel(image, roi):
@@ -394,11 +417,72 @@ def run_composite_tasks(data, tasks_to_run, point=None):
     return unified_results
 
 
+# >>> AUTENTICAÇÃO POR API KEY <<<
+def require_api_key(func):
+    """Decorator para exigir API Key no cabeçalho X-API-Key.
+
+    Valida a chave contra a lista em ALLOWED_API_KEYS (separadas por vírgula).
+    Retorna 401 em caso de ausência ou chave inválida.
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        allowed_keys_env = os.getenv('ALLOWED_API_KEYS', '')
+        allowed_keys = {key.strip() for key in allowed_keys_env.split(',') if key.strip()}
+        provided_key = request.headers.get('X-API-Key')
+
+        if not provided_key:
+            return jsonify({'error': 'API key ausente. Envie em X-API-Key'}), 401
+
+        if not allowed_keys or provided_key not in allowed_keys:
+            return jsonify({'error': 'API key inválida ou não autorizada'}), 401
+
+        return func(*args, **kwargs)
+
+    return wrapper
+
 # >>> ENDPOINTS DA API <<<
 
 @app.route('/health', methods=['GET'])
 def health_check():
-    """Endpoint para verificar saúde da aplicação e projeto GEE."""
+    """Endpoint para verificar saúde da aplicação e projeto GEE.
+    ---
+    tags:
+      - Health
+    produces:
+      - application/json
+    responses:
+      200:
+        description: Estado de saúde da API e informações do projeto GEE
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: healthy
+            gee_project:
+              type: object
+              properties:
+                project_id:
+                  type: string
+                status:
+                  type: string
+                source:
+                  type: string
+            timestamp:
+              type: number
+      500:
+        description: Erro ao verificar saúde
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: unhealthy
+            error:
+              type: string
+            timestamp:
+              type: number
+    """
     try:
         project_info = get_project_info()
         return jsonify({
@@ -414,7 +498,74 @@ def health_check():
         }), 500
 
 @app.route('/ndvi_composite', methods=['POST'])
+@require_api_key
 def ndvi_composite():
+    """Gera estatísticas de NDVI e URLs de tiles para períodos de data.
+    ---
+    tags:
+      - NDVI
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      - ApiKeyAuth: []
+    parameters:
+      - name: X-API-Key
+        in: header
+        type: string
+        required: true
+        description: Chave de API válida
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - roi
+          properties:
+            roi:
+              type: object
+              description: GeoJSON Polygon da ROI
+              properties:
+                type:
+                  type: string
+                  example: Polygon
+                coordinates:
+                  type: array
+                  items:
+                    type: array
+                    items:
+                      type: array
+                      items:
+                        type: number
+            date_periods:
+              type: array
+              description: Lista de períodos [start_date, end_date]
+              items:
+                type: array
+                items:
+                  type: string
+                  example: '2024-01-01'
+    responses:
+      200:
+        description: Resultados de NDVI por período e URLs de tiles
+        schema:
+          type: object
+          properties:
+            ndvi:
+              type: object
+            ndvi_tiles:
+              type: object
+            project_info:
+              type: object
+      400:
+        description: Requisição inválida
+      401:
+        description: Não autorizado (API Key ausente ou inválida)
+      500:
+        description: Erro interno do servidor
+    """
     try:
         initialize_gee()
         data = request.json
@@ -436,7 +587,63 @@ def ndvi_composite():
         return jsonify({'error': str(e), 'project_info': get_project_info()}), 500
 
 @app.route('/climate_stats', methods=['POST'])
+@require_api_key
 def climate_stats():
+    """Calcula estatísticas climáticas (precipitação e temperatura) para um ponto.
+    ---
+    tags:
+      - Climate
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      - ApiKeyAuth: []
+    parameters:
+      - name: X-API-Key
+        in: header
+        type: string
+        required: true
+        description: Chave de API válida
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - point
+          properties:
+            point:
+              type: object
+              description: GeoJSON Point
+              properties:
+                type:
+                  type: string
+                  example: Point
+                coordinates:
+                  type: array
+                  items:
+                    type: number
+            date_periods:
+              type: array
+              description: Lista de períodos [start_date, end_date]
+              items:
+                type: array
+                items:
+                  type: string
+                  example: '2024-01-01'
+    responses:
+      200:
+        description: Estatísticas climáticas por período
+        schema:
+          type: object
+      400:
+        description: Requisição inválida
+      401:
+        description: Não autorizado (API Key ausente ou inválida)
+      500:
+        description: Erro interno do servidor
+    """
     start_time = time.time()
     try:
         initialize_gee()
