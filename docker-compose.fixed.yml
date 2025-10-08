@@ -11,6 +11,7 @@ services:
       GEE_PROJECT: "ee-silasnascimento"
       FLASK_ENV: "development"
       PYTHONUNBUFFERED: "1"
+      ALLOWED_API_KEYS: "dev-key-1,dev-key-2"
     volumes:
       - earthengine_credentials:/root/.config/earthengine
     restart: unless-stopped
